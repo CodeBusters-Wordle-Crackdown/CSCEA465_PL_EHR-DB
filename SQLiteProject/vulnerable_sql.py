@@ -8,7 +8,7 @@ def get_user_credentials(username, db = 'test.db'):
         print(f"SQLite3: Established connection to {db}! ") #Debug
         
 
-        print(f"SQLite3: Initializing cursor ...") #Debug
+        print(f"\nSQLite3: Initializing cursor ...") #Debug
         db_cursor = db_connection.cursor() #creates cursor
         print(f"SQLite3: Cursor initialized!") #Debug
 
@@ -16,12 +16,14 @@ def get_user_credentials(username, db = 'test.db'):
         probe_query1 = f"select * from users where username ='{username}'"
         #probe_query2 = f"SELECT * FROM users WHERE username = ?"
 
-        print(f"Executing Query: {probe_query1}") #DEBUG
+        print(f"\nExecuting Query: {probe_query1}") #DEBUG
 
         db_cursor.execute(probe_query1)
 
         #if successful, collects all user data
         probe_result = db_cursor.fetchall() #returns list of tuples or an empty list
+        if len(probe_result) > 0:
+            print(f"Extraction Successful!\n")
 
         #close connection
         db_connection.close()
@@ -37,10 +39,10 @@ def get_user_credentials(username, db = 'test.db'):
 
 #test SQL injection
 inj_prompt1 = "'OR '1' = '1" #statement is true, should return all users!
-print(f"Testing inj_prompt 1 with malicious imput: {inj_prompt1}")
+print(f"\nTesting inj_prompt 1 with malicious imput: {inj_prompt1}")
 print(get_user_credentials(inj_prompt1))
 
 #test normal input
 normal_input = "alice"
-print(f"Testing inj_prompt1 with normal input: {normal_input}")
+print(f"\nTesting inj_prompt1 with normal input: {normal_input}")
 print (get_user_credentials(normal_input))
