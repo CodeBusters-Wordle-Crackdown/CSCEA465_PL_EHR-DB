@@ -40,11 +40,20 @@ class SQLInjectionAttacks:
         self.successful_attacks = 0  # Counter for successful attacks
         self.unsuccessful_attacks = 0  # Counter for unsuccessful attacks
         self.max_length = 0  # Maximum length of menu lines (used for scaling)
+        self.current_default_query = ""  # Track default query for handlers
+
+        # Initialize handler dispatch dictionary
+        self.handlers = {
+            '1': self.handle_default_query,
+            '2': self.handle_manual_input,
+            '3': self.handle_predefined_queries
+        }
 
         # Prompts to the user
         self.prompt_welcome = "Welcome to the SQL Injection Simulator!"
         self.prompt_description = "This program demonstrates SQL injection attacks in a controlled environment."
-        self.prompt_instructions = "Follow the instructions below to simulate an attack. Press 'q' at any time to return to the main menu."
+        self.prompt_instructions = "Follow the instructions below to simulate an attack."
+        self.prompt_quit_instruction = "Press 'q' at any time to return to the main menu."
         self.prompt_attack_choice = "\nEnter the attack number or name: "
         self.prompt_db_file = "Enter the database file name or path (default: test.db): "
         self.prompt_query_options = "=== Query Input Options ==="
@@ -148,7 +157,8 @@ class SQLInjectionAttacks:
         description = [
             self.prompt_welcome,
             self.prompt_description,
-            self.prompt_instructions
+            self.prompt_instructions,
+            self.prompt_quit_instruction
         ]
 
         # Menu options
@@ -188,13 +198,46 @@ class SQLInjectionAttacks:
                     return attack_ID
             print("Invalid choice. Please try again or press 'q' to return to the main menu.")
 
+    def handle_default_query(self):
+        """Handler for default query option."""
+        if self.current_default_query:
+            print(f"Using default query: {self.current_default_query}")
+            return self.current_default_query
+        else:
+            print("No default query available for this attack. Please choose another option.")
+            return None
+
+    def handle_manual_input(self):
+        """Handler for manual input option."""
+        username = input(self.prompt_username).strip()
+        if username.lower() == 'q':
+            return None
+        return username
+
+    def handle_predefined_queries(self):
+        """Handler for predefined queries option."""
+        predefined_lines = [
+            "=== Predefined Queries ===",
+            *[f"{i}. {query}" for i, query in enumerate(self.predefined_queries, start=1)],
+            "========================="
+        ]
+        for line in predefined_lines:
+            print(line.center(self.max_length))
+        query_choice = input("Select a query by number: ").strip().lower()
+        if query_choice == 'q':
+            return None
+        if query_choice.isdigit() and 1 <= int(query_choice) <= len(self.predefined_queries):
+            return self.predefined_queries[int(query_choice) - 1]
+        else:
+            print("Invalid choice. Please try again or press 'q' to return to the main menu.")
+            return None
+
     def get_query_input(self, attack_ID):
         """
-        Prompts the user to select a query option: default, manual input, or select from a list.
-        The query input options and predefined queries are formatted similarly to the main menu.
+        Prompts the user to select a query option using class-level handlers.
         """
         attack_info = self.attacks[attack_ID]
-        default_query = attack_info.get("default_query", "")
+        self.current_default_query = attack_info.get("default_query", "")  # Store for handlers
 
         # Print the query input options
         for line in self.query_options:
@@ -204,36 +247,12 @@ class SQLInjectionAttacks:
             option = input(self.prompt_query_choice).strip().lower()
             if option == 'q':
                 return None  # Return to main menu
-            elif option == "1":
-                if default_query:
-                    print(f"Using default query: {default_query}")
-                    return default_query
-                else:
-                    print("No default query available for this attack. Please choose another option.")
-            elif option == "2":
-                username = input(self.prompt_username).strip()
-                if username.lower() == 'q':
-                    return None  # Return to main menu
-                return username
-            elif option == "3":
-                # Format the predefined queries
-                predefined_lines = [
-                    "=== Predefined Queries ===",
-                    *[f"{i}. {query}" for i, query in enumerate(self.predefined_queries, start=1)],
-                    "========================="
-                ]
 
-                # Print the predefined queries
-                for line in predefined_lines:
-                    print(line.center(self.max_length))
-
-                query_choice = input("Select a query by number: ").strip().lower()
-                if query_choice == 'q':
-                    return None  # Return to main menu
-                if query_choice.isdigit() and 1 <= int(query_choice) <= len(self.predefined_queries):
-                    return self.predefined_queries[int(query_choice) - 1]
-                else:
-                    print("Invalid choice. Please try again or press 'q' to return to the main menu.")
+            handler = self.handlers.get(option)
+            if handler:
+                result = handler()
+                if result is not None:
+                    return result
             else:
                 print("Invalid option. Please try again or press 'q' to return to the main menu.")
 
