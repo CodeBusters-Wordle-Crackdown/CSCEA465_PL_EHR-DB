@@ -1,4 +1,5 @@
 import sqlite3
+import os
 
 """
 Python 3.9.7
@@ -133,7 +134,7 @@ class SQLInjectionAttacks:
             "================================",
             f"Successful Attacks: {self.successful_attacks}",
             f"Unsuccessful Attacks: {self.unsuccessful_attacks}",
-            "================================\n"
+            "================================"
         ]
 
         # Combine description and menu lines
@@ -206,7 +207,7 @@ class SQLInjectionAttacks:
                 predefined_lines = [
                     "=== Predefined Queries ===",
                     *[f"{i}. {query}" for i, query in enumerate(predefined_queries, start=1)],
-                    "=========================\n"
+                    "========================="
                 ]
 
                 # Determine the longest line in the predefined queries
