@@ -34,7 +34,7 @@ Key Classes and Functions:
     - get_user_choice: Prompts the user to select an attack by number or name.
     - get_query_input: Prompts the user to input a query or select from predefined options.
     - main_menu: Main loop for interacting with the user.
-    - handle_default_query, handle_manual_input, handle_predefined_queries: Handlers for query input options.
+    - get_handle_query: Generalized handler for query input options (default, manual, predefined).
   - manage_db_connection: Manages database connections and executes attacks.
   - execute_attack: Executes the selected attack based on the attack ID and query.
 
@@ -66,13 +66,6 @@ class SQLInjectionAttacks:
         self.max_length = 0  # Maximum length of menu lines (used for scaling)
         self.current_default_query = ""  # Track default query for handlers
 
-        # Initialize handler dispatch dictionary
-        self.handlers = {
-            '1': self.handle_default_query,
-            '2': self.handle_manual_input,
-            '3': self.handle_predefined_queries
-        }
-
         # Input keys for user interaction
         self.input_return = 'r'  # Key to return to the main menu
         self.input_quit = 'q'  # Key to quit the program
@@ -86,6 +79,13 @@ class SQLInjectionAttacks:
             # Add other database connection functions here as needed
             # Example: "MySQL": mysql.connector.connect,
             # Example: "PostgreSQL": psycopg2.connect,
+        }
+
+        # Initialize handler dispatch dictionary
+        self.handlers = {
+            '1': lambda: self.get_handle_query('default'),
+            '2': lambda: self.get_handle_query('manual'),
+            '3': lambda: self.get_handle_query('predefined')
         }
 
         # Prompts to the user
@@ -264,42 +264,48 @@ class SQLInjectionAttacks:
                     return attack_ID
             print(self.prompt_invalid_choice)
 
-    def handle_default_query(self):
-        """Handler for default query option."""
-        if self.current_default_query:
-            print(self.prompt_using_default_query.format(self.current_default_query))
-            return self.current_default_query
+    def get_handle_query(self, query_type):
+        """
+        Generalized handler for query input options (default, manual, predefined).
+        Repeated code is moved outside the if/elif/else blocks.
+        """
+        # Common variables and logic
+        if query_type == 'default':
+            if self.current_default_query:
+                print(self.prompt_using_default_query.format(self.current_default_query))
+                return self.current_default_query
+            else:
+                print(self.prompt_no_default_query)
+                return None
+
+        elif query_type == 'manual':
+            username = input(self.prompt_username).strip()
+            if username.lower() == self.input_quit:
+                print(self.prompt_exit)
+                exit()  # Quit the program
+            if username.lower() == self.input_return:
+                return None  # Return to main menu
+            return username
+
+        elif query_type == 'predefined':
+            # Print the predefined queries
+            for line in self.predefined_lines:
+                print(line.center(self.max_length))
+
+            query_choice = input("Select a query by number: ").strip().lower()
+            if query_choice == self.input_quit:
+                print(self.prompt_exit)
+                exit()  # Quit the program
+            if query_choice == self.input_return:
+                return None  # Return to main menu
+            if query_choice.isdigit() and 1 <= int(query_choice) <= len(self.predefined_queries):
+                return self.predefined_queries[int(query_choice) - 1]
+            else:
+                print(self.prompt_invalid_choice)
+                return None
+
         else:
-            print(self.prompt_no_default_query)
-            return None
-
-    def handle_manual_input(self):
-        """Handler for manual input option."""
-        username = input(self.prompt_username).strip()
-        if username.lower() == self.input_quit:
-            print(self.prompt_exit)
-            exit()  # Quit the program
-        if username.lower() == self.input_return:
-            return None  # Return to main menu
-        return username
-
-    def handle_predefined_queries(self):
-        """Handler for predefined queries option."""
-        # Print the predefined queries
-        for line in self.predefined_lines:
-            print(line.center(self.max_length))
-
-        query_choice = input("Select a query by number: ").strip().lower()
-        if query_choice == self.input_quit:
-            print(self.prompt_exit)
-            exit()  # Quit the program
-        if query_choice == self.input_return:
-            return None  # Return to main menu
-        if query_choice.isdigit() and 1 <= int(query_choice) <= len(self.predefined_queries):
-            return self.predefined_queries[int(query_choice) - 1]
-        else:
-            print(self.prompt_invalid_choice)
-            return None
+            raise ValueError(f"Invalid query type: {query_type}")
 
     def get_query_input(self, attack_ID):
         """
