@@ -1,20 +1,26 @@
 import sqlite3
 
 class SQLInjectionAttacks:
-    def __init__(self, attack_ID):
+    def __init__(self):
         """
-        Initialize the class with an attack_ID to determine which function to call.
+        Initialize the class with a dictionary of available attacks.
         """
-        self.attack_ID = attack_ID
+        self.attacks = {
+            1: {
+                "function": self.get_user_credentials,
+                "sqli_name": "Extract User Credentials"
+            }
+            # Add more attacks here as needed
+        }
 
-    def execute_attack(self, username, db='test.db'):
+    def execute_attack(self, attack_ID, username, db='test.db'):
         """
         Executes the attack based on the attack_ID.
         """
-        if self.attack_ID == 1:
-            return self.get_user_credentials(username, db)
+        if attack_ID in self.attacks:
+            return self.attacks[attack_ID]["function"](username, db)
         else:
-            raise ValueError(f"Invalid attack_ID: {self.attack_ID}")
+            raise ValueError(f"Invalid attack_ID: {attack_ID}")
 
     def get_user_credentials(self, username, db='test.db'):
         """
@@ -51,20 +57,65 @@ class SQLInjectionAttacks:
             if db_connection:
                 db_connection.close()
 
+    def display_menu(self):
+        """
+        Displays a formatted menu of available SQL injection methods.
+        """
+        print("\n=== SQL Injection Attack Menu ===")
+        for attack_ID, attack_info in self.attacks.items():
+            print(f"{attack_ID}. {attack_info['sqli_name']}")
+        print("================================")
+
+    def get_user_choice(self):
+        """
+        Prompts the user to select an attack by number or name.
+        """
+        while True:
+            choice = input("\nEnter the attack number or name: ").strip().lower()
+            # Check if the input is a valid attack number
+            if choice.isdigit() and int(choice) in self.attacks:
+                return int(choice)
+            # Check if the input is a valid attack name
+            for attack_ID, attack_info in self.attacks.items():
+                if choice == attack_info["sqli_name"].lower():
+                    return attack_ID
+            print("Invalid choice. Please try again.")
+
+    def main_menu(self):
+        """
+        Main menu function to interact with the user.
+        """
+        # Display the menu
+        self.display_menu()
+
+        # Get the user's choice
+        attack_ID = self.get_user_choice()
+
+        # Get the database file name or path
+        db = input("Enter the database file name or path (default: test.db): ").strip()
+        if not db:
+            db = 'test.db'
+
+        # Get the username input for the attack
+        username = input("Enter the username to probe: ").strip()
+
+        # Execute the selected attack
+        print(f"\nExecuting {self.attacks[attack_ID]['sqli_name']}...")
+        result = self.execute_attack(attack_ID, username, db)
+
+        # Display the results
+        if result:
+            print("\nAttack Results:")
+            for row in result:
+                print(row)
+        else:
+            print("\nNo results found or an error occurred.")
+
 
 # Example usage
 if __name__ == "__main__":
-    # Create an instance of the class with attack_ID = 1
-    attack = SQLInjectionAttacks(attack_ID=1)
+    # Create an instance of the class
+    sql_attacks = SQLInjectionAttacks()
 
-    # Test SQL injection with malicious input
-    malicious_input = "'OR '1' = '1"
-    print("Testing SQL injection with malicious input:")
-    result = attack.execute_attack(malicious_input)
-    print(result)
-
-    # Test with normal input
-    normal_input = "alice"  # Replace with a valid username in your database
-    print("\nTesting with normal input:")
-    result = attack.execute_attack(normal_input)
-    print(result)
+    # Run the main menu
+    sql_attacks.main_menu()
