@@ -17,5 +17,5 @@ def get_user_credentials(username):
 
 
 #test SQL injection
-inj_prompt1 = " 'OR '1' = '1' " #statement is true, should return all users!
+inj_prompt1 = "'OR '1' = '1" #statement is true, should return all users!
 print(get_user_credentials(inj_prompt1))
