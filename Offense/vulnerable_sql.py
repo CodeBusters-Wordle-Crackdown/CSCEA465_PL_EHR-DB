@@ -48,6 +48,10 @@ Notes:
   - Ensure the database file exists and is accessible before running attacks.
 """
 
+import sqlite3
+import os
+import platform
+
 class SQLInjectionAttacks:
     def __init__(self):
         """
@@ -75,10 +79,17 @@ class SQLInjectionAttacks:
 
         # Database connection dispatch dictionary
         self.db_connection_functions = {
-            "SQLite3": sqlite3.connect,  # SQLite3 connection function
+            "sqlite3": sqlite3.connect,  # SQLite3 connection function
             # Add other database connection functions here as needed
-            # Example: "MySQL": mysql.connector.connect,
-            # Example: "PostgreSQL": psycopg2.connect,
+            # Example: "mysql": mysql.connector.connect,
+            # Example: "postgresql": psycopg2.connect,
+        }
+
+        # Initialize handler dispatch dictionary
+        self.handlers = {
+            '1': lambda: self.get_handle_query('default'),
+            '2': lambda: self.get_handle_query('manual'),
+            '3': lambda: self.get_handle_query('predefined')
         }
 
         # Initialize handler dispatch dictionary
@@ -160,6 +171,15 @@ class SQLInjectionAttacks:
             "================================"
         ]
 
+    def clear_screen(self):
+        """
+        Clears the terminal screen.
+        """
+        if platform.system() == "Windows":
+            os.system("cls")
+        else:
+            os.system("clear")
+
     def manage_db_connection(self, attack_ID, query, db='test.db'):
         """
         Manages the database connection and executes the selected attack.
@@ -167,7 +187,7 @@ class SQLInjectionAttacks:
         """
         try:
             # Get the database connection function based on self.db_name
-            db_connect_function = self.db_connection_functions.get(self.db_name)
+            db_connect_function = self.db_connection_functions.get(self.db_name.lower())
             if not db_connect_function:
                 raise ValueError(f"Unsupported database type: {self.db_name}")
 
@@ -358,10 +378,18 @@ class SQLInjectionAttacks:
             if not db:
                 db = 'test.db'
 
+            # Check if the user entered a database type (e.g., SQLite3)
+            if db.lower() in self.db_connection_functions:
+                self.db_name = db  # Update the database type
+                db = 'test.db'  # Use the default database file
+
             # Get the query input
             query = self.get_query_input(attack_ID)
             if query is None:
                 continue  # Return to main menu
+
+            # Clear the screen before executing the attack
+            self.clear_screen()
 
             # Execute the selected attack
             print(self.prompt_executing.format(self.attacks[attack_ID]['sqli_name']))
