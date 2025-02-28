@@ -45,7 +45,7 @@ class SQLInjectionAttacks:
         self.prompt_instructions = "Follow the instructions below to simulate an attack."
         self.prompt_attack_choice = "\nEnter the attack number or name: "
         self.prompt_db_file = "Enter the database file name or path (default: test.db): "
-        self.prompt_query_options = "\n=== Query Input Options ==="
+        self.prompt_query_options = "=== Query Input Options ==="
         self.prompt_query_default = "1. Use default query (if available)"
         self.prompt_query_manual = "2. Manually input username/query"
         self.prompt_query_predefined = "3. Select from a list of predefined queries"
@@ -107,31 +107,17 @@ class SQLInjectionAttacks:
             if db_connection:
                 db_connection.close()
 
-    def print_boxed(self, text):
+    def print_centered(self, text):
         """
-        Prints text inside a box of '*' that scales to the terminal width.
-        This function is kept for future use but is currently commented out.
+        Prints text centered in the terminal window.
         """
-        # Determine the longest line in the text
-        lines = text.splitlines()
-        max_length = max(len(line) for line in lines)
-
-        # Add padding to the box width
-        box_width = max_length + 4  # Add 2 '*' on each side
-
-        # Create the box border
-        border = '*' * box_width
-
-        # Print the boxed text
-        print(border)
-        for line in lines:
-            print(f"* {line.center(max_length)} *")
-        print(border)
+        terminal_width = os.get_terminal_size().columns
+        for line in text.splitlines():
+            print(line.center(terminal_width))
 
     def display_menu(self):
         """
         Displays a formatted menu of available SQL injection methods and attack statistics.
-        The stars are no longer used in the main menu.
         """
         # Menu description
         description = [
@@ -147,7 +133,7 @@ class SQLInjectionAttacks:
             "================================",
             f"Successful Attacks: {self.successful_attacks}",
             f"Unsuccessful Attacks: {self.unsuccessful_attacks}",
-            "================================"
+            "================================\n"
         ]
 
         # Combine description and menu lines
@@ -178,15 +164,26 @@ class SQLInjectionAttacks:
     def get_query_input(self, attack_ID):
         """
         Prompts the user to select a query option: default, manual input, or select from a list.
+        The query input options and predefined queries are formatted similarly to the main menu.
         """
         attack_info = self.attacks[attack_ID]
         default_query = attack_info.get("default_query", "")
 
-        print(self.prompt_query_options)
-        print(self.prompt_query_default)
-        print(self.prompt_query_manual)
-        print(self.prompt_query_predefined)
-        print(self.prompt_query_separator)
+        # Format the query input options
+        query_options = [
+            self.prompt_query_options,
+            self.prompt_query_default,
+            self.prompt_query_manual,
+            self.prompt_query_predefined,
+            self.prompt_query_separator
+        ]
+
+        # Determine the longest line in the query options
+        max_length = max(len(line) for line in query_options)
+
+        # Print the query input options
+        for line in query_options:
+            print(line.center(max_length))
 
         while True:
             option = input(self.prompt_query_choice).strip()
@@ -205,9 +202,20 @@ class SQLInjectionAttacks:
                     "admin' --",
                     "'; DROP TABLE users; --"
                 ]
-                print("\nPredefined Queries:")
-                for i, query in enumerate(predefined_queries, start=1):
-                    print(f"{i}. {query}")
+                # Format the predefined queries
+                predefined_lines = [
+                    "=== Predefined Queries ===",
+                    *[f"{i}. {query}" for i, query in enumerate(predefined_queries, start=1)],
+                    "=========================\n"
+                ]
+
+                # Determine the longest line in the predefined queries
+                max_length = max(len(line) for line in predefined_lines)
+
+                # Print the predefined queries
+                for line in predefined_lines:
+                    print(line.center(max_length))
+
                 query_choice = input("Select a query by number: ").strip()
                 if query_choice.isdigit() and 1 <= int(query_choice) <= len(predefined_queries):
                     return predefined_queries[int(query_choice) - 1]
