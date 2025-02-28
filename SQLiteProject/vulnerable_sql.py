@@ -3,7 +3,7 @@ import sqlite3
 class SQLInjectionAttacks:
     def __init__(self):
         """
-        Initialize the class with a dictionary of available attacks and counters.
+        Initialize the class with a dictionary of available attacks.
         """
         self.attacks = {
             1: {
@@ -13,8 +13,6 @@ class SQLInjectionAttacks:
             }
             # Add more attacks here as needed
         }
-        self.successful_attacks = 0  # Counter for successful attacks
-        self.unsuccessful_attacks = 0  # Counter for unsuccessful attacks
 
     def execute_attack(self, attack_ID, query, db='test.db'):
         """
@@ -48,16 +46,11 @@ class SQLInjectionAttacks:
             probe_result = db_cursor.fetchall()  # Returns a list of tuples or an empty list
             if len(probe_result) > 0:
                 print(f"Extraction Successful!\n")
-                self.successful_attacks += 1  # Increment successful attacks counter
-            else:
-                print(f"Extraction Unsuccessful.\n")
-                self.unsuccessful_attacks += 1  # Increment unsuccessful attacks counter
 
             return probe_result
 
         except sqlite3.Error as e:
             print(f"Database error: {e}")
-            self.unsuccessful_attacks += 1  # Increment unsuccessful attacks counter
             return None
 
         finally:
@@ -67,14 +60,11 @@ class SQLInjectionAttacks:
 
     def display_menu(self):
         """
-        Displays a formatted menu of available SQL injection methods and attack statistics.
+        Displays a formatted menu of available SQL injection methods.
         """
         print("\n=== SQL Injection Attack Menu ===")
         for attack_ID, attack_info in self.attacks.items():
             print(f"{attack_ID}. {attack_info['sqli_name']}")
-        print("================================")
-        print(f"Successful Attacks: {self.successful_attacks}")
-        print(f"Unsuccessful Attacks: {self.unsuccessful_attacks}")
         print("================================")
 
     def get_user_choice(self):
@@ -136,40 +126,32 @@ class SQLInjectionAttacks:
     def main_menu(self):
         """
         Main menu function to interact with the user.
-        Loops until the user enters "n" to exit.
         """
-        while True:
-            # Display the menu
-            self.display_menu()
+        # Display the menu
+        self.display_menu()
 
-            # Get the user's choice
-            attack_ID = self.get_user_choice()
+        # Get the user's choice
+        attack_ID = self.get_user_choice()
 
-            # Get the database file name or path
-            db = input("Enter the database file name or path (default: test.db): ").strip()
-            if not db:
-                db = 'test.db'
+        # Get the database file name or path
+        db = input("Enter the database file name or path (default: test.db): ").strip()
+        if not db:
+            db = 'test.db'
 
-            # Get the query input
-            query = self.get_query_input(attack_ID)
+        # Get the query input
+        query = self.get_query_input(attack_ID)
 
-            # Execute the selected attack
-            print(f"\nExecuting {self.attacks[attack_ID]['sqli_name']}...")
-            result = self.execute_attack(attack_ID, query, db)
+        # Execute the selected attack
+        print(f"\nExecuting {self.attacks[attack_ID]['sqli_name']}...")
+        result = self.execute_attack(attack_ID, query, db)
 
-            # Display the results
-            if result:
-                print("\nAttack Results:")
-                for row in result:
-                    print(row)
-            else:
-                print("\nNo results found or an error occurred.")
-
-            # Ask the user if they want to continue
-            continue_choice = input("\nDo you want to perform another attack? (y/n): ").strip().lower()
-            if continue_choice != 'y':
-                print("Exiting the program. Goodbye!")
-                break
+        # Display the results
+        if result:
+            print("\nAttack Results:")
+            for row in result:
+                print(row)
+        else:
+            print("\nNo results found or an error occurred.")
 
 
 # Example usage
