@@ -15,13 +15,37 @@ Offense Method: SQL Injection
 This program simulates SQL injection attacks against a centralized database in a standalone, controlled environment.
 It is designed for educational purposes to demonstrate how SQL injection works and how to prevent it.
 
+Key Features:
+  - SQL Injection Simulation: Allows users to simulate SQL injection attacks in a controlled environment.
+  - Dynamic Query Input: Users can choose from default queries, manually input queries, or select from predefined queries.
+  - User-Friendly Menu: Provides a clear and interactive menu for selecting attacks and viewing results.
+  - Debugging Information: Displays detailed debug information for database connections and query execution.
+  - Dynamic Programming: Precomputes and stores reusable data structures to optimize performance.
+  - Centralized String Management: All prompts and messages are stored in the class body for easy modification and localization.
+  - Enhanced User Interaction: 
+    - Press {input_return} to return to the main menu at any time.
+    - Press {input_quit} to quit the program entirely.
+  - Database Flexibility: Supports multiple database types (e.g., SQLite3) via a dispatch dictionary.
+
 Key Classes and Functions:
   - SQLInjectionAttacks: Main class for managing SQL injection attacks.
-  - get_user_credentials: Simulates an SQL injection attack to extract user credentials.
-  - display_menu: Displays a formatted menu of available attacks.
-  - get_user_choice: Prompts the user to select an attack by number or name.
-  - get_query_input: Prompts the user to input a query or select from predefined options.
-  - main_menu: Main loop for interacting with the user.
+    - get_user_credentials: Simulates an SQL injection attack to extract user credentials.
+    - display_menu: Displays a formatted menu of available attacks and statistics.
+    - get_user_choice: Prompts the user to select an attack by number or name.
+    - get_query_input: Prompts the user to input a query or select from predefined options.
+    - main_menu: Main loop for interacting with the user.
+    - handle_default_query, handle_manual_input, handle_predefined_queries: Handlers for query input options.
+  - manage_db_connection: Manages database connections and executes attacks.
+  - execute_attack: Executes the selected attack based on the attack ID and query.
+
+Usage:
+  - Run the script and follow the on-screen instructions to simulate SQL injection attacks.
+  - Use the menu to select attacks, input queries, and view results.
+  - Press {input_return} to return to the main menu or {input_quit} to quit the program at any time.
+
+Notes:
+  - This program is for educational purposes only and should not be used for malicious purposes.
+  - Ensure the database file exists and is accessible before running attacks.
 """
 
 class SQLInjectionAttacks:
@@ -49,25 +73,52 @@ class SQLInjectionAttacks:
             '3': self.handle_predefined_queries
         }
 
+        # Input keys for user interaction
+        self.input_return = 'r'  # Key to return to the main menu
+        self.input_quit = 'q'  # Key to quit the program
+
+        # Database name (e.g., SQLite3)
+        self.db_name = "SQLite3"  # Can be changed to another database name if needed
+
+        # Database connection dispatch dictionary
+        self.db_connection_functions = {
+            "SQLite3": sqlite3.connect,  # SQLite3 connection function
+            # Add other database connection functions here as needed
+            # Example: "MySQL": mysql.connector.connect,
+            # Example: "PostgreSQL": psycopg2.connect,
+        }
+
         # Prompts to the user
         self.prompt_welcome = "Welcome to the SQL Injection Simulator!"
         self.prompt_description = "This program demonstrates SQL injection attacks in a controlled environment."
-        self.prompt_instructions = "Follow the instructions below to simulate an attack."
-        self.prompt_quit_instruction = "Press 'q' at any time to return to the main menu."
-        self.prompt_attack_choice = "\nEnter the attack number or name: "
-        self.prompt_db_file = "Enter the database file name or path (default: test.db): "
+        self.prompt_instructions = f"Follow the instructions below to simulate an attack. Press {self.input_quit} to quit or {self.input_return} to return to the main menu at any time."
+        self.prompt_attack_choice = f"\nEnter the attack number or name (or press {self.input_return} to return to the main menu): "
+        self.prompt_db_file = f"Enter the database file name or path (default: test.db, or press {self.input_return} to return to the main menu): "
         self.prompt_query_options = "=== Query Input Options ==="
         self.prompt_query_default = "1. Use default query (if available)"
         self.prompt_query_manual = "2. Manually input username/query"
         self.prompt_query_predefined = "3. Select from a list of predefined queries"
         self.prompt_query_separator = "==========================="
-        self.prompt_query_choice = "Enter your choice (1, 2, or 3): "
-        self.prompt_username = "Enter the username/query to probe: "
+        self.prompt_query_choice = f"Enter your choice (1, 2, or 3, or press {self.input_return} to return to the main menu): "
+        self.prompt_username = f"Enter the username/query to probe (or press {self.input_return} to return to the main menu): "
         self.prompt_executing = "\nExecuting {}..."
         self.prompt_results = "\nAttack Results:"
         self.prompt_no_results = "\nNo results found or an error occurred."
-        self.prompt_continue = "\nDo you want to perform another attack? (y/n): "
+        self.prompt_continue = f"\nDo you want to perform another attack? (y/n, or press {self.input_return} to return to the main menu): "
         self.prompt_exit = "Exiting the program. Goodbye!"
+
+        # Debug and informational prompts
+        self.prompt_db_connect_attempt = f"{self.db_name}: Attempting to connect to {{}}..."
+        self.prompt_db_connect_success = f"{self.db_name}: Established connection to {{}}!"
+        self.prompt_db_cursor_init = f"{self.db_name}: Initializing cursor..."
+        self.prompt_db_cursor_success = f"{self.db_name}: Cursor initialized!"
+        self.prompt_query_execution = "\nExecuting Query: {}"
+        self.prompt_extraction_success = "Extraction Successful!\n"
+        self.prompt_extraction_failure = "Extraction Unsuccessful.\n"
+        self.prompt_invalid_choice = f"Invalid choice. Please try again or press {self.input_return} to return to the main menu."
+        self.prompt_invalid_option = f"Invalid option. Please try again or press {self.input_return} to return to the main menu."
+        self.prompt_no_default_query = "No default query available for this attack. Please choose another option."
+        self.prompt_using_default_query = "Using default query: {}"
 
         # Predefined queries
         self.predefined_queries = [
@@ -76,7 +127,14 @@ class SQLInjectionAttacks:
             "'; DROP TABLE users; --"
         ]
 
-        # Query input options
+        # Predefined query menu lines (moved to class body for reusability)
+        self.predefined_lines = [
+            "=== Predefined Queries ===",
+            *[f"{i}. {query}" for i, query in enumerate(self.predefined_queries, start=1)],
+            "========================="
+        ]
+
+        # Query input options (precomputed for dynamic programming)
         self.query_options = [
             self.prompt_query_options,
             self.prompt_query_default,
@@ -85,25 +143,48 @@ class SQLInjectionAttacks:
             self.prompt_query_separator
         ]
 
+        # Menu description (precomputed for dynamic programming)
+        self.menu_description = [
+            self.prompt_welcome,
+            self.prompt_description,
+            self.prompt_instructions
+        ]
+
+        # Menu options (precomputed for dynamic programming)
+        self.menu_lines = [
+            "=== SQL Injection Attack Menu ===",
+            *[f"{attack_ID}. {attack_info['sqli_name']}" for attack_ID, attack_info in self.attacks.items()],
+            "================================",
+            f"Successful Attacks: {self.successful_attacks}",
+            f"Unsuccessful Attacks: {self.unsuccessful_attacks}",
+            "================================"
+        ]
+
     def manage_db_connection(self, attack_ID, query, db='test.db'):
         """
         Manages the database connection and executes the selected attack.
+        Uses a dispatch dictionary to determine the appropriate database connection function.
         """
         try:
-            print(f"SQLite3: Attempting to connect to {db}...")  # Debug
-            db_connection = sqlite3.connect(db)  # Attempt to connect to the database
-            print(f"SQLite3: Established connection to {db}!")  # Debug
+            # Get the database connection function based on self.db_name
+            db_connect_function = self.db_connection_functions.get(self.db_name)
+            if not db_connect_function:
+                raise ValueError(f"Unsupported database type: {self.db_name}")
 
-            print(f"\nSQLite3: Initializing cursor...")  # Debug
+            print(self.prompt_db_connect_attempt.format(db))  # Debug
+            db_connection = db_connect_function(db)  # Connect to the database
+            print(self.prompt_db_connect_success.format(db))  # Debug
+
+            print(self.prompt_db_cursor_init)  # Debug
             db_cursor = db_connection.cursor()  # Create a cursor
-            print(f"SQLite3: Cursor initialized!")  # Debug
+            print(self.prompt_db_cursor_success)  # Debug
 
             # Execute the selected attack
             result = self.execute_attack(attack_ID, query, db_connection, db_cursor)
 
             return result
 
-        except sqlite3.Error as e:
+        except Exception as e:
             print(f"Database error: {e}")
             return None
 
@@ -127,17 +208,17 @@ class SQLInjectionAttacks:
         """
         # Construct the query
         probe_query = f"SELECT * FROM users WHERE username = '{query}'"
-        print(f"\nExecuting Query: {probe_query}")  # Debug
+        print(self.prompt_query_execution.format(probe_query))  # Debug
 
         db_cursor.execute(probe_query)
 
         # If successful, collect all user data
         probe_result = db_cursor.fetchall()  # Returns a list of tuples or an empty list
         if len(probe_result) > 0:
-            print(f"Extraction Successful!\n")
+            print(self.prompt_extraction_success)
             self.successful_attacks += 1  # Increment successful attacks counter
         else:
-            print(f"Extraction Unsuccessful.\n")
+            print(self.prompt_extraction_failure)
             self.unsuccessful_attacks += 1  # Increment unsuccessful attacks counter
 
         return probe_result
@@ -153,26 +234,8 @@ class SQLInjectionAttacks:
         """
         Displays a formatted menu of available SQL injection methods and attack statistics.
         """
-        # Menu description
-        description = [
-            self.prompt_welcome,
-            self.prompt_description,
-            self.prompt_instructions,
-            self.prompt_quit_instruction
-        ]
-
-        # Menu options
-        menu_lines = [
-            "=== SQL Injection Attack Menu ===",
-            *[f"{attack_ID}. {attack_info['sqli_name']}" for attack_ID, attack_info in self.attacks.items()],
-            "================================",
-            f"Successful Attacks: {self.successful_attacks}",
-            f"Unsuccessful Attacks: {self.unsuccessful_attacks}",
-            "================================"
-        ]
-
         # Combine description and menu lines
-        full_menu = description + [""] + menu_lines
+        full_menu = self.menu_description + [""] + self.menu_lines
 
         # Determine the longest line in the menu
         self.max_length = max(len(line) for line in full_menu)
@@ -187,7 +250,10 @@ class SQLInjectionAttacks:
         """
         while True:
             choice = input(self.prompt_attack_choice).strip().lower()
-            if choice == 'q':
+            if choice == self.input_quit:
+                print(self.prompt_exit)
+                exit()  # Quit the program
+            if choice == self.input_return:
                 return None  # Return to main menu
             # Check if the input is a valid attack number
             if choice.isdigit() and int(choice) in self.attacks:
@@ -196,40 +262,43 @@ class SQLInjectionAttacks:
             for attack_ID, attack_info in self.attacks.items():
                 if choice == attack_info["sqli_name"].lower():
                     return attack_ID
-            print("Invalid choice. Please try again or press 'q' to return to the main menu.")
+            print(self.prompt_invalid_choice)
 
     def handle_default_query(self):
         """Handler for default query option."""
         if self.current_default_query:
-            print(f"Using default query: {self.current_default_query}")
+            print(self.prompt_using_default_query.format(self.current_default_query))
             return self.current_default_query
         else:
-            print("No default query available for this attack. Please choose another option.")
+            print(self.prompt_no_default_query)
             return None
 
     def handle_manual_input(self):
         """Handler for manual input option."""
         username = input(self.prompt_username).strip()
-        if username.lower() == 'q':
-            return None
+        if username.lower() == self.input_quit:
+            print(self.prompt_exit)
+            exit()  # Quit the program
+        if username.lower() == self.input_return:
+            return None  # Return to main menu
         return username
 
     def handle_predefined_queries(self):
         """Handler for predefined queries option."""
-        predefined_lines = [
-            "=== Predefined Queries ===",
-            *[f"{i}. {query}" for i, query in enumerate(self.predefined_queries, start=1)],
-            "========================="
-        ]
-        for line in predefined_lines:
+        # Print the predefined queries
+        for line in self.predefined_lines:
             print(line.center(self.max_length))
+
         query_choice = input("Select a query by number: ").strip().lower()
-        if query_choice == 'q':
-            return None
+        if query_choice == self.input_quit:
+            print(self.prompt_exit)
+            exit()  # Quit the program
+        if query_choice == self.input_return:
+            return None  # Return to main menu
         if query_choice.isdigit() and 1 <= int(query_choice) <= len(self.predefined_queries):
             return self.predefined_queries[int(query_choice) - 1]
         else:
-            print("Invalid choice. Please try again or press 'q' to return to the main menu.")
+            print(self.prompt_invalid_choice)
             return None
 
     def get_query_input(self, attack_ID):
@@ -245,7 +314,10 @@ class SQLInjectionAttacks:
 
         while True:
             option = input(self.prompt_query_choice).strip().lower()
-            if option == 'q':
+            if option == self.input_quit:
+                print(self.prompt_exit)
+                exit()  # Quit the program
+            if option == self.input_return:
                 return None  # Return to main menu
 
             handler = self.handlers.get(option)
@@ -254,7 +326,7 @@ class SQLInjectionAttacks:
                 if result is not None:
                     return result
             else:
-                print("Invalid option. Please try again or press 'q' to return to the main menu.")
+                print(self.prompt_invalid_option)
 
     def main_menu(self):
         """
@@ -272,7 +344,10 @@ class SQLInjectionAttacks:
 
             # Get the database file name or path
             db = input(self.prompt_db_file).strip()
-            if db.lower() == 'q':
+            if db.lower() == self.input_quit:
+                print(self.prompt_exit)
+                break  # Quit the program
+            if db.lower() == self.input_return:
                 continue  # Return to main menu
             if not db:
                 db = 'test.db'
@@ -296,7 +371,10 @@ class SQLInjectionAttacks:
 
             # Ask the user if they want to continue
             continue_choice = input(self.prompt_continue).strip().lower()
-            if continue_choice == 'q':
+            if continue_choice == self.input_quit:
+                print(self.prompt_exit)
+                break  # Quit the program
+            if continue_choice == self.input_return:
                 continue  # Return to main menu
             if continue_choice != 'y':
                 print(self.prompt_exit)
