@@ -1,11 +1,8 @@
 import sqlite3
-import os
-import datetime
 
-# Header Block
-header = f"""
-Python {os.popen('python --version').read().strip()}
-Date: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+"""
+Python 3.9.7
+Date: 2023-10-15 14:30:45
 Author: Clint and Constantine
 CSCEA465 Network Security
 Peer Learning Assignment: Team: Database B
@@ -26,25 +23,6 @@ Key Classes and Functions:
   - main_menu: Main loop for interacting with the user.
 """
 
-def print_centered(text):
-    """
-    Prints text centered in the terminal window.
-    """
-    terminal_width = os.get_terminal_size().columns
-    for line in text.splitlines():
-        print(line.center(terminal_width))
-
-def print_boxed(text):
-    """
-    Prints text inside a box of '*' that scales to the terminal width.
-    """
-    terminal_width = os.get_terminal_size().columns
-    border = '*' * terminal_width
-    print(border)
-    for line in text.splitlines():
-        print(line.center(terminal_width))
-    print(border)
-
 class SQLInjectionAttacks:
     def __init__(self):
         """
@@ -60,6 +38,25 @@ class SQLInjectionAttacks:
         }
         self.successful_attacks = 0  # Counter for successful attacks
         self.unsuccessful_attacks = 0  # Counter for unsuccessful attacks
+
+        # Prompts to the user
+        self.prompt_welcome = "Welcome to the SQL Injection Simulator!"
+        self.prompt_description = "This program demonstrates SQL injection attacks in a controlled environment."
+        self.prompt_instructions = "Follow the instructions below to simulate an attack."
+        self.prompt_attack_choice = "\nEnter the attack number or name: "
+        self.prompt_db_file = "Enter the database file name or path (default: test.db): "
+        self.prompt_query_options = "\n=== Query Input Options ==="
+        self.prompt_query_default = "1. Use default query (if available)"
+        self.prompt_query_manual = "2. Manually input username/query"
+        self.prompt_query_predefined = "3. Select from a list of predefined queries"
+        self.prompt_query_separator = "==========================="
+        self.prompt_query_choice = "Enter your choice (1, 2, or 3): "
+        self.prompt_username = "Enter the username/query to probe: "
+        self.prompt_executing = "\nExecuting {}..."
+        self.prompt_results = "\nAttack Results:"
+        self.prompt_no_results = "\nNo results found or an error occurred."
+        self.prompt_continue = "\nDo you want to perform another attack? (y/n): "
+        self.prompt_exit = "Exiting the program. Goodbye!"
 
     def execute_attack(self, attack_ID, query, db='test.db'):
         """
@@ -110,25 +107,65 @@ class SQLInjectionAttacks:
             if db_connection:
                 db_connection.close()
 
+    def print_boxed(self, text):
+        """
+        Prints text inside a box of '*' that scales to the terminal width.
+        This function is kept for future use but is currently commented out.
+        """
+        # Determine the longest line in the text
+        lines = text.splitlines()
+        max_length = max(len(line) for line in lines)
+
+        # Add padding to the box width
+        box_width = max_length + 4  # Add 2 '*' on each side
+
+        # Create the box border
+        border = '*' * box_width
+
+        # Print the boxed text
+        print(border)
+        for line in lines:
+            print(f"* {line.center(max_length)} *")
+        print(border)
+
     def display_menu(self):
         """
         Displays a formatted menu of available SQL injection methods and attack statistics.
+        The stars are no longer used in the main menu.
         """
-        menu_text = "\n=== SQL Injection Attack Menu ==="
-        for attack_ID, attack_info in self.attacks.items():
-            menu_text += f"\n{attack_ID}. {attack_info['sqli_name']}"
-        menu_text += "\n================================"
-        menu_text += f"\nSuccessful Attacks: {self.successful_attacks}"
-        menu_text += f"\nUnsuccessful Attacks: {self.unsuccessful_attacks}"
-        menu_text += "\================================"
-        print_boxed(menu_text)
+        # Menu description
+        description = [
+            self.prompt_welcome,
+            self.prompt_description,
+            self.prompt_instructions
+        ]
+
+        # Menu options
+        menu_lines = [
+            "=== SQL Injection Attack Menu ===",
+            *[f"{attack_ID}. {attack_info['sqli_name']}" for attack_ID, attack_info in self.attacks.items()],
+            "================================",
+            f"Successful Attacks: {self.successful_attacks}",
+            f"Unsuccessful Attacks: {self.unsuccessful_attacks}",
+            "================================"
+        ]
+
+        # Combine description and menu lines
+        full_menu = description + [""] + menu_lines
+
+        # Determine the longest line in the menu
+        max_length = max(len(line) for line in full_menu)
+
+        # Print the menu without stars
+        for line in full_menu:
+            print(line.center(max_length))
 
     def get_user_choice(self):
         """
         Prompts the user to select an attack by number or name.
         """
         while True:
-            choice = input("\nEnter the attack number or name: ").strip().lower()
+            choice = input(self.prompt_attack_choice).strip().lower()
             # Check if the input is a valid attack number
             if choice.isdigit() and int(choice) in self.attacks:
                 return int(choice)
@@ -145,14 +182,14 @@ class SQLInjectionAttacks:
         attack_info = self.attacks[attack_ID]
         default_query = attack_info.get("default_query", "")
 
-        print("\n=== Query Input Options ===")
-        print("1. Use default query (if available)")
-        print("2. Manually input username/query")
-        print("3. Select from a list of predefined queries")
-        print("===========================")
+        print(self.prompt_query_options)
+        print(self.prompt_query_default)
+        print(self.prompt_query_manual)
+        print(self.prompt_query_predefined)
+        print(self.prompt_query_separator)
 
         while True:
-            option = input("Enter your choice (1, 2, or 3): ").strip()
+            option = input(self.prompt_query_choice).strip()
             if option == "1":
                 if default_query:
                     print(f"Using default query: {default_query}")
@@ -160,7 +197,7 @@ class SQLInjectionAttacks:
                 else:
                     print("No default query available for this attack. Please choose another option.")
             elif option == "2":
-                return input("Enter the username/query to probe: ").strip()
+                return input(self.prompt_username).strip()
             elif option == "3":
                 # Example predefined queries (can be expanded)
                 predefined_queries = [
@@ -184,10 +221,6 @@ class SQLInjectionAttacks:
         Main menu function to interact with the user.
         Loops until the user enters "n" to exit.
         """
-        print_centered("Welcome to the SQL Injection Simulator!")
-        print_centered("This program demonstrates SQL injection attacks in a controlled environment.")
-        print_centered("Follow the instructions below to simulate an attack.\n")
-
         while True:
             # Display the menu
             self.display_menu()
@@ -196,7 +229,7 @@ class SQLInjectionAttacks:
             attack_ID = self.get_user_choice()
 
             # Get the database file name or path
-            db = input("Enter the database file name or path (default: test.db): ").strip()
+            db = input(self.prompt_db_file).strip()
             if not db:
                 db = 'test.db'
 
@@ -204,29 +237,26 @@ class SQLInjectionAttacks:
             query = self.get_query_input(attack_ID)
 
             # Execute the selected attack
-            print(f"\nExecuting {self.attacks[attack_ID]['sqli_name']}...")
+            print(self.prompt_executing.format(self.attacks[attack_ID]['sqli_name']))
             result = self.execute_attack(attack_ID, query, db)
 
             # Display the results
             if result:
-                print("\nAttack Results:")
+                print(self.prompt_results)
                 for row in result:
                     print(row)
             else:
-                print("\nNo results found or an error occurred.")
+                print(self.prompt_no_results)
 
             # Ask the user if they want to continue
-            continue_choice = input("\nDo you want to perform another attack? (y/n): ").strip().lower()
+            continue_choice = input(self.prompt_continue).strip().lower()
             if continue_choice != 'y':
-                print("Exiting the program. Goodbye!")
+                print(self.prompt_exit)
                 break
 
 
 # Example usage
 if __name__ == "__main__":
-    # Print the header block
-    print_centered(header)
-
     # Create an instance of the class
     sql_attacks = SQLInjectionAttacks()
 
