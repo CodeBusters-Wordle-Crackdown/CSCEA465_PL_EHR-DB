@@ -1,4 +1,49 @@
 import sqlite3
+import os
+import datetime
+
+# Header Block
+header = f"""
+Python {os.popen('python --version').read().strip()}
+Date: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+Author: Clint and Constantine
+CSCEA465 Network Security
+Peer Learning Assignment: Team: Database B
+  - Team Lead: Constantine
+  - Offense Team: Constantine, Clint
+  - Defense Team: Gwen, Nicasio
+
+Offense Method: SQL Injection
+This program simulates SQL injection attacks against a centralized database in a standalone, controlled environment.
+It is designed for educational purposes to demonstrate how SQL injection works and how to prevent it.
+
+Key Classes and Functions:
+  - SQLInjectionAttacks: Main class for managing SQL injection attacks.
+  - get_user_credentials: Simulates an SQL injection attack to extract user credentials.
+  - display_menu: Displays a formatted menu of available attacks.
+  - get_user_choice: Prompts the user to select an attack by number or name.
+  - get_query_input: Prompts the user to input a query or select from predefined options.
+  - main_menu: Main loop for interacting with the user.
+"""
+
+def print_centered(text):
+    """
+    Prints text centered in the terminal window.
+    """
+    terminal_width = os.get_terminal_size().columns
+    for line in text.splitlines():
+        print(line.center(terminal_width))
+
+def print_boxed(text):
+    """
+    Prints text inside a box of '*' that scales to the terminal width.
+    """
+    terminal_width = os.get_terminal_size().columns
+    border = '*' * terminal_width
+    print(border)
+    for line in text.splitlines():
+        print(line.center(terminal_width))
+    print(border)
 
 class SQLInjectionAttacks:
     def __init__(self):
@@ -69,13 +114,14 @@ class SQLInjectionAttacks:
         """
         Displays a formatted menu of available SQL injection methods and attack statistics.
         """
-        print("\n=== SQL Injection Attack Menu ===")
+        menu_text = "\n=== SQL Injection Attack Menu ==="
         for attack_ID, attack_info in self.attacks.items():
-            print(f"{attack_ID}. {attack_info['sqli_name']}")
-        print("================================")
-        print(f"Successful Attacks: {self.successful_attacks}")
-        print(f"Unsuccessful Attacks: {self.unsuccessful_attacks}")
-        print("================================")
+            menu_text += f"\n{attack_ID}. {attack_info['sqli_name']}"
+        menu_text += "\n================================"
+        menu_text += f"\nSuccessful Attacks: {self.successful_attacks}"
+        menu_text += f"\nUnsuccessful Attacks: {self.unsuccessful_attacks}"
+        menu_text += "\================================"
+        print_boxed(menu_text)
 
     def get_user_choice(self):
         """
@@ -138,6 +184,10 @@ class SQLInjectionAttacks:
         Main menu function to interact with the user.
         Loops until the user enters "n" to exit.
         """
+        print_centered("Welcome to the SQL Injection Simulator!")
+        print_centered("This program demonstrates SQL injection attacks in a controlled environment.")
+        print_centered("Follow the instructions below to simulate an attack.\n")
+
         while True:
             # Display the menu
             self.display_menu()
@@ -174,6 +224,9 @@ class SQLInjectionAttacks:
 
 # Example usage
 if __name__ == "__main__":
+    # Print the header block
+    print_centered(header)
+
     # Create an instance of the class
     sql_attacks = SQLInjectionAttacks()
 
