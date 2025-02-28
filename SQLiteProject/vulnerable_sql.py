@@ -67,6 +67,15 @@ class SQLInjectionAttacks:
             "'; DROP TABLE users; --"
         ]
 
+        # Query input options
+        self.query_options = [
+            self.prompt_query_options,
+            self.prompt_query_default,
+            self.prompt_query_manual,
+            self.prompt_query_predefined,
+            self.prompt_query_separator
+        ]
+
     def execute_attack(self, attack_ID, query, db='test.db'):
         """
         Executes the attack based on the attack_ID and provided query.
@@ -177,17 +186,8 @@ class SQLInjectionAttacks:
         attack_info = self.attacks[attack_ID]
         default_query = attack_info.get("default_query", "")
 
-        # Format the query input options
-        query_options = [
-            self.prompt_query_options,
-            self.prompt_query_default,
-            self.prompt_query_manual,
-            self.prompt_query_predefined,
-            self.prompt_query_separator
-        ]
-
         # Print the query input options
-        for line in query_options:
+        for line in self.query_options:
             print(line.center(self.max_length))
 
         while True:
