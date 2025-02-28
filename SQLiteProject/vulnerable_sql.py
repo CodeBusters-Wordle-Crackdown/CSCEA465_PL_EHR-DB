@@ -1,5 +1,6 @@
 import sqlite3
 
+#Probes DB for vulnerablilities and attempts to extract all users
 def get_user_credentials(username):
     db_connection = sqlite3.connect('test.db')
     db_cursor = db_connection.cursor()
