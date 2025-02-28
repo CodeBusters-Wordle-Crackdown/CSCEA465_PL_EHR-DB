@@ -39,6 +39,7 @@ class SQLInjectionAttacks:
         }
         self.successful_attacks = 0  # Counter for successful attacks
         self.unsuccessful_attacks = 0  # Counter for unsuccessful attacks
+        self.max_length = 0  # Maximum length of menu lines (used for scaling)
 
         # Prompts to the user
         self.prompt_welcome = "Welcome to the SQL Injection Simulator!"
@@ -58,6 +59,13 @@ class SQLInjectionAttacks:
         self.prompt_no_results = "\nNo results found or an error occurred."
         self.prompt_continue = "\nDo you want to perform another attack? (y/n): "
         self.prompt_exit = "Exiting the program. Goodbye!"
+
+        # Predefined queries
+        self.predefined_queries = [
+            "'OR '1' = '1",
+            "admin' --",
+            "'; DROP TABLE users; --"
+        ]
 
     def execute_attack(self, attack_ID, query, db='test.db'):
         """
@@ -112,9 +120,8 @@ class SQLInjectionAttacks:
         """
         Prints text centered in the terminal window.
         """
-        terminal_width = os.get_terminal_size().columns
         for line in text.splitlines():
-            print(line.center(terminal_width))
+            print(line.center(self.max_length))
 
     def display_menu(self):
         """
@@ -141,11 +148,11 @@ class SQLInjectionAttacks:
         full_menu = description + [""] + menu_lines
 
         # Determine the longest line in the menu
-        max_length = max(len(line) for line in full_menu)
+        self.max_length = max(len(line) for line in full_menu)
 
         # Print the menu without stars
         for line in full_menu:
-            print(line.center(max_length))
+            print(line.center(self.max_length))
 
     def get_user_choice(self):
         """
@@ -179,12 +186,9 @@ class SQLInjectionAttacks:
             self.prompt_query_separator
         ]
 
-        # Determine the longest line in the query options
-        max_length = max(len(line) for line in query_options)
-
         # Print the query input options
         for line in query_options:
-            print(line.center(max_length))
+            print(line.center(self.max_length))
 
         while True:
             option = input(self.prompt_query_choice).strip()
@@ -197,29 +201,20 @@ class SQLInjectionAttacks:
             elif option == "2":
                 return input(self.prompt_username).strip()
             elif option == "3":
-                # Example predefined queries (can be expanded)
-                predefined_queries = [
-                    "'OR '1' = '1",
-                    "admin' --",
-                    "'; DROP TABLE users; --"
-                ]
                 # Format the predefined queries
                 predefined_lines = [
                     "=== Predefined Queries ===",
-                    *[f"{i}. {query}" for i, query in enumerate(predefined_queries, start=1)],
+                    *[f"{i}. {query}" for i, query in enumerate(self.predefined_queries, start=1)],
                     "========================="
                 ]
 
-                # Determine the longest line in the predefined queries
-                max_length = max(len(line) for line in predefined_lines)
-
                 # Print the predefined queries
                 for line in predefined_lines:
-                    print(line.center(max_length))
+                    print(line.center(self.max_length))
 
                 query_choice = input("Select a query by number: ").strip()
-                if query_choice.isdigit() and 1 <= int(query_choice) <= len(predefined_queries):
-                    return predefined_queries[int(query_choice) - 1]
+                if query_choice.isdigit() and 1 <= int(query_choice) <= len(self.predefined_queries):
+                    return self.predefined_queries[int(query_choice) - 1]
                 else:
                     print("Invalid choice. Please try again.")
             else:
