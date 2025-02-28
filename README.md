@@ -4,10 +4,13 @@
 This project simulates an **SQL injection attack** on a centralized **Electronic Health Record (EHR) database**, evaluates vulnerabilities, and implements security measures to defend against them. The goal is to demonstrate real-world cybersecurity threats and best practices in database security.  
 
 ## Team Roles  
-- **Team Lead:** Constantine Hinds (Dynamic role – supports all teams as needed)  
-- **Database Team:** Designs and implements a simple database with patient records and user authentication. **Once complete, they join the Defense Team.**  
-- **Defensive Team:** Implements security measures to prevent SQL injection, such as input validation, prepared statements, and encryption.  
-- **Offensive Team:** Conducts **three rounds of SQL injection attacks**, refining techniques and exposing vulnerabilities after each round.  
+- **Team Lead:** Constantine Hinds 
+  - Dynamic role – supports all teams as needed  
+- **Defensive Team:** Nicasio and Gwen
+  - Designs and implements a simple database with patient records and user authentication.   
+  - Implement security measures to prevent SQL injection, such as input validation, prepared statements, and encryption.  
+- **Offensive Team: Clint and Constantine** 
+  - Conducts **three rounds of SQL injection attacks**, refining techniques and exposing vulnerabilities after each round.  
 
 ## Project Timeline  
 | Date | Task |
@@ -15,7 +18,7 @@ This project simulates an **SQL injection attack** on a centralized **Electronic
 | **Feb 19-21** | Finalize database design, confirm roles, set up GitHub repository. |
 | **Feb 22-27** | Initial implementation: database setup, security mechanisms, and offensive strategy formulation. |
 | **Feb 28 @ 7 PM** | Initial implementation must be completed for testing. |
-| **Feb 28 - Mar 4** | Three rounds of SQL injection attacks and defense improvements. Data recorded after each round. |
+| **Feb 28 - Mar 1** | Three rounds of SQL injection attacks and defense improvements. Data recorded after each round. |
 | **Mar 4 or 6** | Project demonstration. |
 | **Mar 5** | Final revisions and documentation completion. |
 | **Mar 7 @ 1 PM** | Submission deadline. |
@@ -35,11 +38,11 @@ This project simulates an **SQL injection attack** on a centralized **Electronic
    - Defensive team implements **security best practices** to protect against SQL injection.  
    - Offensive team researches and prepares attack strategies.  
 
-3. **SQL Injection Attack Rounds & Defense Adjustments** (Feb 28 - Mar 4)  
+3. **SQL Injection Attack Rounds & Defense Adjustments** (Feb 28 - Mar 3)  
    - Conduct **three rounds** of attacks.  
    - Record vulnerabilities and adjust defenses between each round.  
 
-4. **Final Revisions & Demo Prep** (Mar 5-6)  
+4. **Final Revisions & Demo Prep** (Feb 28- Mar 3)  
    - Refine implementation, finalize documentation, and prepare for the demo.  
 
 5. **Submission** (Mar 7, 1 PM AKST)  
