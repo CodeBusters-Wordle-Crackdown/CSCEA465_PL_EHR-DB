@@ -19,14 +19,10 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Hash Password Function
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
 # Route for Home Page
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("register.html")
 
 # Route for Handling Form Submission
 @app.route("/register", methods=["POST"])
@@ -35,21 +31,50 @@ def register():
     password = request.form["password"]
     color = request.form["color"]
 
-    hashed_password = hash_password(password)
-
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
 
     try:
         cursor.execute("INSERT INTO users (username, password, favorite_color) VALUES (?, ?, ?)",
-                       (username, hashed_password, color))
+                       (username, password, color))
         conn.commit()
         message = "User registered successfully!"
     except sqlite3.IntegrityError:
         message = "Error: Username already taken."
     
     conn.close()
-    return render_template("index.html", message=message)
+    return render_template("register.html", message=message)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        # Connect to the database (fix)
+        conn = sqlite3.connect("users.db")
+        conn.row_factory = sqlite3.Row  # Enables dictionary-style access
+        cursor = conn.cursor()
+
+        # Fetch user data
+        try:
+            user = cursor.execute(f"SELECT * FROM users WHERE username = \"{username}\" AND password = \"{password}\"").fetchall()
+                
+            conn.close()
+            message = ""
+            if user:
+                for u in user:
+                    message += (f"{u['username']}'s favorite color is: {u['favorite_color']} \n")  # Access using dictionary key
+            else:
+                message = "Error: Invalid username or password"
+        except Exception as e:
+            message = "Something went wrong :("     # Vague error message, for a truly "blind" attack
+            #message = e        # Expose to front end what the error message is
+
+
+        return render_template("login.html", message=message)
+
+    return render_template('login.html')
 
 if __name__ == "__main__":
     init_db()
