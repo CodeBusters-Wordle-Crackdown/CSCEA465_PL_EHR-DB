@@ -184,6 +184,7 @@ class SQLInjectionAttacks:
         Manages the database connection and executes the selected attack.
         Uses a dispatch dictionary to determine the appropriate database connection function.
         """
+        db_connection = None  # Initialize the variable outside the try block
         try:
             # Get the database connection function based on self.db_name
             db_connect_function = self.db_connection_functions.get(self.db_name.lower())
@@ -208,7 +209,7 @@ class SQLInjectionAttacks:
             return None
 
         finally:
-            # Close the connection
+            # Close the connection if it was successfully opened
             if db_connection:
                 db_connection.close()
 
