@@ -47,11 +47,10 @@ Notes:
   - Ensure the database file exists and is accessible before running attacks.
   - For Docker-hosted SQLite3 attacks, ensure the server is running and accessible.
 """
-
 import sqlite3
 import os
 import platform
-import requests  # For making HTTP requests to target servers# For making HTTP requests to target servers
+import requests
 
 class SQLInjectionAttacks:
     def __init__(self):
@@ -79,6 +78,7 @@ class SQLInjectionAttacks:
         # Input keys for user interaction
         self.input_return = 'r'  # Key to return to the main menu
         self.input_quit = 'q'  # Key to quit the program
+        self.input_continue = 'c'  # Key to continue attacking the specified database or URL/IP
 
         # Database name (e.g., SQLite3)
         self.db_name = "SQLite3"  # Can be changed to another database name if needed
@@ -101,7 +101,7 @@ class SQLInjectionAttacks:
         # Prompts to the user
         self.prompt_welcome = "Welcome to the SQL Injection Simulator!"
         self.prompt_description = "This program demonstrates SQL injection attacks in a controlled environment."
-        self.prompt_instructions = f"Follow the instructions below to simulate an attack. Press {self.input_quit} to quit or {self.input_return} to return to the main menu at any time."
+        self.prompt_instructions = f"Follow the instructions below to simulate an attack. Press {self.input_quit} to quit, {self.input_return} to return to the main menu, or {self.input_continue} to continue attacking the specified database or URL/IP at any time."
         self.prompt_attack_choice = f"\nEnter the attack number or name (or press {self.input_return} to return to the main menu): "
         self.prompt_db_file = f"Enter the database file name or path (default: test.db, or press {self.input_return} to return to the main menu): "
         self.prompt_query_options = "=== Query Input Options ==="
@@ -114,7 +114,7 @@ class SQLInjectionAttacks:
         self.prompt_executing = "\nExecuting {}..."
         self.prompt_results = "\nAttack Results:"
         self.prompt_no_results = "\nNo results found or an error occurred."
-        self.prompt_continue = f"\nDo you want to perform another attack? (y/n, or press {self.input_return} to return to the main menu): "
+        self.prompt_continue = f"\nDo you want to perform another attack? (y/n, or press {self.input_return} to return to the main menu, or {self.input_continue} to continue attacking the specified database or URL/IP): "
         self.prompt_exit = "Exiting the program. Goodbye!"
 
         # Debug and informational prompts
@@ -250,7 +250,17 @@ class SQLInjectionAttacks:
         """
         # Default Docker server URL (can be overridden by user input)
         default_server_url = "http://localhost:8080"
-        server_url = input(f"Enter the server URL (default: {default_server_url}): ").strip() or default_server_url
+        server_input = input(f"Enter the server URL or IP and port (space or comma separated, default: {default_server_url}): ").strip() or default_server_url
+
+        # Parse the input to handle both URL and IP:port formats
+        if " " in server_input:
+            ip, port = server_input.split()
+            server_url = f"http://{ip}:{port}"
+        elif "," in server_input:
+            ip, port = server_input.split(",")
+            server_url = f"http://{ip}:{port}"
+        else:
+            server_url = server_input
 
         # Construct the malicious query
         malicious_query = f"SELECT * FROM users WHERE username = '{query}'"
@@ -438,6 +448,8 @@ class SQLInjectionAttacks:
                 break  # Quit the program
             if continue_choice == self.input_return:
                 continue  # Return to main menu
+            if continue_choice == self.input_continue:
+                continue  # Continue attacking the specified database or URL/IP
             if continue_choice != 'y':
                 print(self.prompt_exit)
                 break
