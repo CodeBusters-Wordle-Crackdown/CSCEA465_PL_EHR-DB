@@ -11,6 +11,7 @@
 # - Provides an HTTP endpoint to execute SQL queries sent by clients.
 # - Returns query results or error messages in JSON format.
 # - Allows the user to configure the host, port, and database filepath via a main menu.
+# - Allows the user to quit at any time by pressing a configurable quit key.
 #
 # This code was developed with the assistance of AI tools, including GitHub Copilot and OpenAI GPT, 
 # for code generation, documentation, and debugging. These tools were used to enhance productivity 
@@ -28,14 +29,17 @@ except ImportError:
 # Create a Flask application instance
 app = Flask(__name__)
 
+# Quit key (can be changed as needed)
+quit_key = 'q'
+
 # Prompts for user interaction
-db_filepath_prompt = "Enter the database filepath (default: test.db): "
-create_db_prompt = "No database filepath provided. Do you want to create a new database? (y/n): "
-new_db_name_prompt = "Enter a name for the new database (e.g., my_database.db): "
-invalid_db_filepath_prompt = "Invalid filepath. Please try again."
-host_prompt = "Enter the host address (e.g., 0.0.0.0 for all interfaces, or 127.0.0.1 for localhost): "
-port_prompt = "Enter the port number (e.g., 8080): "
-invalid_port_prompt = "Invalid port number. Using default 8080."
+db_filepath_prompt = f"Enter the database filepath (default: test.db, or press '{quit_key}' to quit): "
+create_db_prompt = f"No database filepath provided. Do you want to create a new database? (y/n, or press '{quit_key}' to quit): "
+new_db_name_prompt = f"Enter a name for the new database (e.g., my_database.db, or press '{quit_key}' to quit): "
+invalid_db_filepath_prompt = f"Invalid filepath. Please try again or press '{quit_key}' to quit."
+host_prompt = f"Enter the host address (e.g., 0.0.0.0 for all interfaces, or 127.0.0.1 for localhost, or press '{quit_key}' to quit): "
+port_prompt = f"Enter the port number (e.g., 8080, or press '{quit_key}' to quit): "
+invalid_port_prompt = f"Invalid port number. Using default 8080. Press '{quit_key}' to quit."
 
 # Function to initialize the SQLite3 database
 def init_db(db_filepath):
@@ -140,13 +144,22 @@ def main_menu():
     global db_filepath  # Make db_filepath accessible globally
     while True:
         db_filepath = input(db_filepath_prompt).strip()
-        if not db_filepath:
+        if db_filepath.lower() == quit_key:
+            print("Exiting the program. Goodbye!")
+            exit()
+        elif not db_filepath:
             # If no filepath is provided, ask if the user wants to create a new database
             create_new = input(create_db_prompt).strip().lower()
-            if create_new == 'y':
+            if create_new == quit_key:
+                print("Exiting the program. Goodbye!")
+                exit()
+            elif create_new == 'y':
                 # Prompt for a new database name
                 new_db_name = input(new_db_name_prompt).strip()
-                if not new_db_name:
+                if new_db_name.lower() == quit_key:
+                    print("Exiting the program. Goodbye!")
+                    exit()
+                elif not new_db_name:
                     new_db_name = "test.db"  # Default to 'test.db'
                 
                 # Use a file dialog to select the filepath (if available)
@@ -173,23 +186,36 @@ def main_menu():
             print(invalid_db_filepath_prompt)
     
     # Prompt the user for the host string
-    host = input(host_prompt).strip()
-    if not host:
-        host = "0.0.0.0"  # Default to all interfaces
+    while True:
+        host = input(host_prompt).strip()
+        if host.lower() == quit_key:
+            print("Exiting the program. Goodbye!")
+            exit()
+        elif not host:
+            host = "0.0.0.0"  # Default to all interfaces
+            break
+        else:
+            break
     
     # Prompt the user for the port number
-    port = input(port_prompt).strip()
-    if not port:
-        port = 8080  # Default to port 8080
-    else:
-        try:
-            port = int(port)  # Convert the input to an integer
-            if port < 1 or port > 65535:  # Validate port range
+    while True:
+        port = input(port_prompt).strip()
+        if port.lower() == quit_key:
+            print("Exiting the program. Goodbye!")
+            exit()
+        elif not port:
+            port = 8080  # Default to port 8080
+            break
+        else:
+            try:
+                port = int(port)  # Convert the input to an integer
+                if port < 1 or port > 65535:  # Validate port range
+                    print(invalid_port_prompt)
+                    continue
+                break
+            except ValueError:
                 print(invalid_port_prompt)
-                port = 8080  # Fallback to default if port is invalid
-        except ValueError:
-            print(invalid_port_prompt)
-            port = 8080  # Fallback to default if port is invalid
+                continue
     
     print(f"\nStarting server on {host}:{port} with database '{db_filepath}'...")
     return host, port
